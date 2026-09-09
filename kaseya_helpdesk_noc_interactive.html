@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Kaseya | Helpdesk + NOC</title>
+<style>
+  :root{--bg:#04090d;--fg:#f7f8fa;--muted:#99a7b4;--line:#1c2831;--orange:#ff6b00;--blue:#49bfff}
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:Inter,Segoe UI,Arial,sans-serif;overflow-x:hidden}
+  header{height:92px;position:fixed;z-index:50;inset:0 0 auto 0;display:flex;align-items:center;padding:0 32px;background:#020507e8;border-top:2px solid #168ad1;backdrop-filter:blur(14px)}
+  .brand{font-size:27px;font-weight:800;letter-spacing:-1px;white-space:nowrap}.brand i{font-style:normal;color:var(--orange)}
+  nav{display:flex;gap:42px;margin-left:56px;font-weight:600;font-size:16px;align-items:center}nav a{color:#eef3f6;text-decoration:none;opacity:.92}nav a:hover{opacity:1;color:white}
+  .actions{margin-left:auto;display:flex;gap:12px}.btn{padding:15px 25px;border-radius:28px;border:1px solid #30383e;background:#17191c;color:white;font-size:16px;cursor:pointer}.btn.primary{background:white;color:#050708;border-color:white}
+  .hero{height:100svh;min-height:690px;position:relative;overflow:hidden;background:radial-gradient(circle at 50% 52%,#0b151c 0,#04090d 43%,#020608 82%)}
+  #space{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:grab}.hero.dragging #space{cursor:grabbing}
+  .vignette{position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle at center,transparent 35%,rgba(0,0,0,.12) 65%,rgba(0,0,0,.42) 100%)}
+  .label{position:absolute;top:47%;transform:translateY(-50%);font-size:clamp(62px,7vw,126px);font-weight:500;letter-spacing:-5px;text-shadow:0 3px 32px #000;pointer-events:none;z-index:4}.label.left{left:3.5vw}.label.right{right:3.5vw}
+  .hint{position:absolute;left:50%;bottom:28px;transform:translateX(-50%);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:#a9b6bf;z-index:4;opacity:.75;pointer-events:none}
+  .reset{position:absolute;right:22px;bottom:28px;width:50px;height:50px;border-radius:50%;border:1px solid #58636b;background:#252c31cc;color:#e8eef2;font-size:27px;display:grid;place-items:center;cursor:pointer;z-index:6;backdrop-filter:blur(10px)}.reset:hover{background:#354049}
+  .scrollcue{position:absolute;left:50%;bottom:54px;width:1px;height:58px;background:linear-gradient(transparent,#cdd6db);opacity:.35}
+  main{position:relative;z-index:3;background:#060b0f}
+  section.content{max-width:1220px;margin:auto;padding:112px 28px;border-top:1px solid #101a21}.eyebrow{font-size:12px;text-transform:uppercase;letter-spacing:.19em;color:var(--orange);font-weight:800;margin-bottom:16px}.content h2{font-size:clamp(40px,5.5vw,78px);letter-spacing:-4px;line-height:.98;margin:0 0 26px;max-width:950px}.content>p{font-size:20px;line-height:1.62;color:#b6c0c8;max-width:860px}.tabs{display:flex;flex-wrap:wrap;gap:10px;margin:42px 0 28px}.tab{border:1px solid #29343d;background:#0b1217;color:#c9d3da;padding:12px 17px;border-radius:24px;cursor:pointer;transition:.25s}.tab:hover,.tab.active{background:#eef3f6;color:#081017;border-color:#eef3f6}.panels{position:relative}.panel{display:none;animation:fade .35s ease}.panel.active{display:block}@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}.card{background:linear-gradient(145deg,#0d151b,#080d11);border:1px solid #1d2931;border-radius:18px;padding:28px;min-height:230px;transition:.25s transform,.25s border-color}.card:hover{transform:translateY(-4px);border-color:#3a4d5a}.card h3{font-size:23px;margin:0 0 12px}.card p{font-size:16px;line-height:1.58;color:#9eabb4;margin:0}.stat{font-size:52px;font-weight:750;letter-spacing:-3px;color:#fff}.stat small{font-size:18px;color:var(--orange);letter-spacing:0}.service-split{display:grid;grid-template-columns:1fr 1fr;gap:20px}.service{padding:34px;border:1px solid #1e2b34;border-radius:22px;background:#091116}.service h3{font-size:34px;letter-spacing:-1.6px;margin:0 0 12px}.service p{color:#a7b4bc;line-height:1.6}.service ul{padding-left:18px;color:#d7e0e5;line-height:1.9}.service .accent{color:var(--orange);font-weight:800;font-size:13px;text-transform:uppercase;letter-spacing:.15em}
+  footer{padding:44px 32px;border-top:1px solid #1a252d;color:#85949e;display:flex;justify-content:space-between;background:#04080b}
+  @media(max-width:900px){header{height:72px;padding:0 18px}nav{display:none}.actions .btn:first-child{display:none}.btn{padding:11px 17px}.label{font-size:54px;letter-spacing:-3px}.label.left{left:4vw}.label.right{right:4vw}.grid,.service-split{grid-template-columns:1fr}.content{padding-top:82px}.content h2{letter-spacing:-2px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><i>K</i> KASEYA</div>
+  <nav>
+    <a href="#overview">Products</a><a href="#helpdesk">Helpdesk</a><a href="#noc">NOC</a><a href="#operations">MSP Services</a><a href="#overview">Resources</a>
+  </nav>
+  <div class="actions"><button class="btn">Partner Login⌄</button><button class="btn primary" onclick="document.querySelector('#overview').scrollIntoView()">Explore Services ↗</button></div>
+</header>
+
+<section class="hero" id="top">
+  <canvas id="space" aria-label="Interactive Kaseya managed services particle field"></canvas>
+  <div class="vignette"></div>
+  <div class="label left">Helpdesk</div>
+  <div class="label right">NOC</div>
+  <div class="scrollcue"></div>
+  <div class="hint">Drag to rotate · Scroll to explore · Arrow keys also work</div>
+  <button class="reset" id="reset" title="Reset view">↶</button>
+</section>
+
+<main>
+<section class="content" id="overview">
+  <div class="eyebrow">Kaseya Managed Services</div>
+  <h2>Two expert operations. One service delivery experience.</h2>
+  <p>Helpdesk supports the people using technology. NOC supports the infrastructure behind it. Together, they extend MSP service capacity with repeatable processes, clearer ownership and round-the-clock operational coverage.</p>
+  <div class="tabs" data-group="overview">
+    <button class="tab active" data-target="ov1">Service Coverage</button>
+    <button class="tab" data-target="ov2">User Experience</button>
+    <button class="tab" data-target="ov3">Infrastructure</button>
+    <button class="tab" data-target="ov4">Operational Visibility</button>
+  </div>
+  <div class="panels">
+    <div class="panel active" id="ov1"><div class="grid"><div class="card"><div class="stat">24×7</div><h3>Extended service capacity</h3><p>Add coverage without recreating every shift internally.</p></div><div class="card"><div class="stat">2 <small>TEAMS</small></div><h3>Helpdesk + NOC</h3><p>Separate user-support and infrastructure workflows connected under one operating model.</p></div><div class="card"><div class="stat">1 <small>PARTNER VIEW</small></div><h3>Consistent accountability</h3><p>Structured ownership, escalations and service communications across both functions.</p></div></div></div>
+    <div class="panel" id="ov2"><div class="grid"><div class="card"><h3>Ticket Intake</h3><p>Capture, classify and route user issues according to the partner’s defined support model.</p></div><div class="card"><h3>Remote Troubleshooting</h3><p>Resolve common user-impacting issues through standardized support workflows.</p></div><div class="card"><h3>Communication</h3><p>Keep end users and partner teams informed through consistent ticket updates and escalation paths.</p></div></div></div>
+    <div class="panel" id="ov3"><div class="grid"><div class="card"><h3>Alert Handling</h3><p>Review actionable events and execute documented operational responses.</p></div><div class="card"><h3>Patch Operations</h3><p>Coordinate deployment, reboot, validation, exception review and post-maintenance follow-up.</p></div><div class="card"><h3>Remote Operations</h3><p>Perform repeatable infrastructure and maintenance tasks within documented service scope.</p></div></div></div>
+    <div class="panel" id="ov4"><div class="grid"><div class="card"><h3>Service Metrics</h3><p>Bring support and infrastructure activity into a partner-facing operational view.</p></div><div class="card"><h3>Escalation Governance</h3><p>Surface ownership, aging, impact and next actions for issues needing additional attention.</p></div><div class="card"><h3>Cadence Readiness</h3><p>Turn operational activity into account-level discussion points for recurring service reviews.</p></div></div></div>
+  </div>
+</section>
+
+<section class="content" id="helpdesk">
+  <div class="eyebrow">Helpdesk</div><h2>Responsive end-user support that scales with your customers.</h2>
+  <div class="service-split"><div class="service"><div class="accent">Front-line support</div><h3>Support the user.</h3><p>Designed for user-facing issues that need quick triage, troubleshooting, communication and resolution.</p><ul><li>Ticket intake and categorization</li><li>Remote user troubleshooting</li><li>Account and access issue workflows</li><li>Software and device support</li><li>Partner-defined escalation</li></ul></div><div class="service"><div class="accent">Experience</div><h3>Protect the customer relationship.</h3><p>Structured updates and ownership help keep the user informed while reducing the volume of routine support work reaching the MSP’s internal team.</p></div></div>
+</section>
+
+<section class="content" id="noc">
+  <div class="eyebrow">NOC</div><h2>Proactive infrastructure operations behind every supported user.</h2>
+  <div class="service-split"><div class="service"><div class="accent">Operational control</div><h3>Operate the environment.</h3><p>Designed for repeatable technical operations across managed endpoints, servers and infrastructure.</p><ul><li>Alert monitoring and response</li><li>Patch deployment and validation</li><li>Reboot coordination</li><li>Remote operational tasks</li><li>Escalation and exception handling</li></ul></div><div class="service"><div class="accent">Continuity</div><h3>Reduce operational blind spots.</h3><p>Ongoing monitoring, scheduled maintenance and documented escalation workflows help keep infrastructure activity visible and actionable.</p></div></div>
+</section>
+
+<section class="content" id="operations">
+  <div class="eyebrow">Unified MSP Operations</div><h2>Helpdesk handles the experience. NOC handles the infrastructure.</h2>
+  <p>The two services are intentionally different, but they become more valuable when designed as one delivery model: the right issue reaches the right team, the right work follows the right process, and the partner keeps a clearer view of service health.</p>
+</section>
+</main>
+<footer><span>Kaseya Product Experience Concept</span><span>Helpdesk + NOC</span></footer>
+
+<script>
+(() => {
+  const canvas = document.getElementById('space');
+  const ctx = canvas.getContext('2d', {alpha:true});
+  const hero = document.querySelector('.hero');
+  const DPR = Math.min(2, window.devicePixelRatio || 1);
+  let W=0,H=0,cx=0,cy=0;
+  let rotX=-0.12, rotY=0.10, targetX=rotX, targetY=rotY;
+  let dragging=false,lastX=0,lastY=0,idle=0;
+  const pts=[];
+  const stars=[];
+
+  function rand(a,b){return a+Math.random()*(b-a)}
+  function addPoint(x,y,z,size,tone,alpha=1){pts.push({x,y,z,size,tone,alpha,tw:Math.random()*6.28})}
+
+  // Build a luminous 3D double-spiral / service-knot form entirely in JS.
+  for(let arm=0; arm<6; arm++){
+    const phase=arm*Math.PI/3;
+    for(let i=0;i<540;i++){
+      const t=i/539;
+      const a=phase + t*Math.PI*5.8;
+      const r=(0.10 + 0.95*t) * (1.0 - 0.18*Math.sin(t*Math.PI));
+      const wobble=Math.sin(t*9+arm)*0.06;
+      const x=(r*Math.cos(a)+wobble)*1.02;
+      const y=(r*Math.sin(a))*0.76;
+      const z=Math.sin(a*1.12 + arm*.6)*0.33 + Math.cos(t*8)*0.08;
+      const dense=Math.random()<0.13;
+      addPoint(x+rand(-.018,.018),y+rand(-.018,.018),z+rand(-.03,.03), dense?rand(2.2,5.5):rand(.7,2.1), Math.random()<.72?0:(Math.random()<.55?1:2), dense?1:rand(.55,.95));
+    }
+  }
+  for(let i=0;i<180;i++){
+    const a=Math.random()*Math.PI*2,r=Math.pow(Math.random(),.65)*.34;
+    addPoint(Math.cos(a)*r,Math.sin(a)*r*.8,rand(-.2,.2),rand(2,6),Math.random()<.75?0:2,rand(.7,1));
+  }
+  for(let i=0;i<650;i++) stars.push({x:Math.random(),y:Math.random(),s:Math.random()*1.5+.25,a:Math.random()*.55+.12,t:Math.random()<.15?2:(Math.random()<.18?1:0)});
+
+  function resize(){
+    const r=canvas.getBoundingClientRect(); W=r.width;H=r.height;cx=W/2;cy=H/2;
+    canvas.width=Math.max(1,Math.floor(W*DPR)); canvas.height=Math.max(1,Math.floor(H*DPR));
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+  }
+  function rotate(p){
+    let x=p.x,y=p.y,z=p.z;
+    const cyy=Math.cos(rotY),sy=Math.sin(rotY); let x1=x*cyy-z*sy,z1=x*sy+z*cyy;
+    const cxx=Math.cos(rotX),sx=Math.sin(rotX); let y1=y*cxx-z1*sx,z2=y*sx+z1*cxx;
+    return {x:x1,y:y1,z:z2};
+  }
+  function color(t,a){return t===1?`rgba(73,191,255,${a})`:t===2?`rgba(255,139,73,${a})`:`rgba(239,249,255,${a})`}
+  function draw(time){
+    rotX += (targetX-rotX)*.07; rotY += (targetY-rotY)*.07;
+    if(!dragging){ idle+=.0018; targetY += .00042; }
+    ctx.clearRect(0,0,W,H);
+    // background stars
+    for(const s of stars){
+      const px=(s.x*W + Math.sin(idle+s.y*8)*8)%W, py=s.y*H;
+      ctx.fillStyle=color(s.t,s.a);ctx.fillRect(px,py,s.s,s.s);
+    }
+    const scale=Math.min(W,H)*.37;
+    const projected=[];
+    for(const p of pts){
+      const q=rotate(p); const d=2.7-q.z; const k=2.35/d;
+      projected.push({x:cx+q.x*scale*k,y:cy+q.y*scale*k,z:q.z,k,p});
+    }
+    projected.sort((a,b)=>a.z-b.z);
+    ctx.globalCompositeOperation='lighter';
+    for(const q of projected){
+      const {p}=q; const tw=.82+.18*Math.sin(time*.002+p.tw); const rad=p.size*q.k; const alpha=Math.max(.08,p.alpha*(.55+.28*q.k)*tw);
+      if(rad>2.4){
+        const g=ctx.createRadialGradient(q.x,q.y,0,q.x,q.y,rad*4.2);g.addColorStop(0,color(p.tone,alpha));g.addColorStop(.18,color(p.tone,alpha*.58));g.addColorStop(1,color(p.tone,0));ctx.fillStyle=g;ctx.beginPath();ctx.arc(q.x,q.y,rad*4.2,0,Math.PI*2);ctx.fill();
+      }
+      ctx.fillStyle=color(p.tone,Math.min(1,alpha+.15));ctx.beginPath();ctx.arc(q.x,q.y,Math.max(.45,rad),0,Math.PI*2);ctx.fill();
+    }
+    ctx.globalCompositeOperation='source-over';
+    requestAnimationFrame(draw);
+  }
+  canvas.addEventListener('pointerdown',e=>{dragging=true;hero.classList.add('dragging');lastX=e.clientX;lastY=e.clientY;canvas.setPointerCapture(e.pointerId)});
+  canvas.addEventListener('pointermove',e=>{if(!dragging)return;const dx=e.clientX-lastX,dy=e.clientY-lastY;targetY+=dx*.006;targetX+=dy*.004;targetX=Math.max(-1.2,Math.min(1.2,targetX));lastX=e.clientX;lastY=e.clientY});
+  const stop=()=>{dragging=false;hero.classList.remove('dragging')}; canvas.addEventListener('pointerup',stop);canvas.addEventListener('pointercancel',stop);
+  window.addEventListener('keydown',e=>{if(e.key==='ArrowLeft')targetY-=.14;if(e.key==='ArrowRight')targetY+=.14;if(e.key==='ArrowUp')targetX-=.12;if(e.key==='ArrowDown')targetX+=.12});
+  document.getElementById('reset').addEventListener('click',()=>{targetX=-.12;targetY=.10;rotX=targetX;rotY=targetY});
+  window.addEventListener('resize',resize);resize();requestAnimationFrame(draw);
+
+  document.querySelectorAll('.tabs').forEach(group=>group.addEventListener('click',e=>{const b=e.target.closest('.tab');if(!b)return;group.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));b.classList.add('active');const section=group.parentElement;section.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));const t=section.querySelector('#'+b.dataset.target);if(t)t.classList.add('active')}));
+})();
+</script>
+</body>
+</html>
