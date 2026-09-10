@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fireflies at Dusk</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,500&family=Inter:wght@400;500&display=swap');
+
+  :root {
+    --sky-top: #12182b;
+    --sky-mid: #232a4d;
+    --sky-low: #3c3564;
+    --hill-far: #191d33;
+    --hill-near: #0e1122;
+    --glow-core: #fff3c4;
+    --glow-warm: #ffd166;
+    --glow-soft: #ff9f6b;
+    --paper: #f4ead9;
+    --paper-dim: rgba(244, 234, 217, 0.6);
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: var(--sky-top);
+    font-family: 'Inter', sans-serif;
+  }
+
+  #scene {
+    position: fixed;
+    inset: 0;
+    display: block;
+    cursor: none;
+  }
+
+  .custom-cursor {
+    position: fixed;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--glow-core);
+    box-shadow: 0 0 12px 4px rgba(255, 214, 102, 0.6);
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+    z-index: 30;
+    transition: transform 0.08s ease-out;
+  }
+
+  .hud {
+    position: fixed;
+    left: 28px;
+    bottom: 26px;
+    z-index: 20;
+    color: var(--paper);
+    max-width: 320px;
+    pointer-events: none;
+  }
+
+  .hud h1 {
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    font-size: 1.5rem;
+    margin: 0 0 6px 0;
+    letter-spacing: 0.01em;
+  }
+
+  .hud p {
+    margin: 0;
+    font-size: 0.88rem;
+    line-height: 1.5;
+    color: var(--paper-dim);
+  }
+
+  .count {
+    position: fixed;
+    top: 26px;
+    right: 30px;
+    z-index: 20;
+    color: var(--paper);
+    text-align: right;
+    pointer-events: none;
+  }
+
+  .count .num {
+    font-family: 'Fraunces', serif;
+    font-weight: 300;
+    font-size: 2.6rem;
+    line-height: 1;
+    display: block;
+  }
+
+  .count .label {
+    font-size: 0.78rem;
+    color: var(--paper-dim);
+    letter-spacing: 0.02em;
+  }
+
+  .hint {
+    position: fixed;
+    top: 28px;
+    left: 28px;
+    z-index: 20;
+    color: var(--paper-dim);
+    font-size: 0.78rem;
+    opacity: 0;
+    transition: opacity 1s ease;
+    pointer-events: none;
+  }
+
+  .hint.show { opacity: 1; }
+
+  .reset-btn {
+    position: fixed;
+    bottom: 26px;
+    right: 30px;
+    z-index: 20;
+    background: transparent;
+    border: 1px solid rgba(244, 234, 217, 0.35);
+    color: var(--paper-dim);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.8rem;
+    padding: 8px 16px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: border-color 0.2s ease, color 0.2s ease;
+  }
+
+  .reset-btn:hover {
+    border-color: rgba(244, 234, 217, 0.75);
+    color: var(--paper);
+  }
+
+  @media (max-width: 560px) {
+    .hud { max-width: 220px; left: 20px; bottom: 20px; }
+    .hud h1 { font-size: 1.2rem; }
+    .hud p { font-size: 0.8rem; }
+    .count { top: 20px; right: 20px; }
+    .count .num { font-size: 2rem; }
+    .reset-btn { bottom: 20px; right: 20px; padding: 6px 12px; font-size: 0.72rem; }
+    .hint { top: 20px; left: 20px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="scene"></canvas>
+<div class="custom-cursor" id="cursor"></div>
+
+<div class="hint" id="hint">click anywhere in the meadow</div>
+
+<div class="count">
+  <span class="num" id="count">0</span>
+  <span class="label">fireflies out tonight</span>
+</div>
+
+<div class="hud">
+  <h1>Fireflies at Dusk</h1>
+  <p>Click to call one out of the grass. They drift toward your hand if you sit still a while.</p>
+</div>
+
+<button class="reset-btn" id="resetBtn">let them go</button>
+
+<script>
+(function() {
+  const canvas = document.getElementById('scene');
+  const ctx = canvas.getContext('2d');
+  const cursorEl = document.getElementById('cursor');
+  const countEl = document.getElementById('count');
+  const hintEl = document.getElementById('hint');
+  const resetBtn = document.getElementById('resetBtn');
+
+  let W, H, DPR;
+  function resize() {
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    W = window.innerWidth;
+    H = window.innerHeight;
+    canvas.width = W * DPR;
+    canvas.height = H * DPR;
+    canvas.style.width = W + 'px';
+    canvas.style.height = H + 'px';
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  // Pointer tracking
+  let pointer = { x: W / 2, y: H * 0.4, active: false, idleSince: performance.now() };
+
+  function setPointer(x, y) {
+    if (Math.abs(x - pointer.x) > 1 || Math.abs(y - pointer.y) > 1) {
+      pointer.idleSince = performance.now();
+    }
+    pointer.x = x;
+    pointer.y = y;
+    pointer.active = true;
+    cursorEl.style.left = x + 'px';
+    cursorEl.style.top = y + 'px';
+  }
+
+  window.addEventListener('mousemove', e => setPointer(e.clientX, e.clientY));
+  window.addEventListener('touchmove', e => {
+    if (e.touches[0]) setPointer(e.touches[0].clientX, e.touches[0].clientY);
+  }, { passive: true });
+
+  // Hill silhouettes (static shapes, drawn once per frame cheaply)
+  function hillPath(baseY, amp, seed) {
+    const pts = [];
+    const segments = 8;
+    for (let i = 0; i <= segments; i++) {
+      const x = (W / segments) * i;
+      const y = baseY + Math.sin(i * 1.3 + seed) * amp;
+      pts.push([x, y]);
+    }
+    return pts;
+  }
+
+  function drawHills() {
+    // far hill
+    let pts = hillPath(H * 0.72, 18, 2);
+    ctx.beginPath();
+    ctx.moveTo(0, H);
+    ctx.lineTo(pts[0][0], pts[0][1]);
+    for (const p of pts) ctx.lineTo(p[0], p[1]);
+    ctx.lineTo(W, H);
+    ctx.closePath();
+    ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--hill-far');
+    ctx.fill();
+
+    // near hill
+    pts = hillPath(H * 0.85, 24, 5);
+    ctx.beginPath();
+    ctx.moveTo(0, H);
+    ctx.lineTo(pts[0][0], pts[0][1]);
+    for (const p of pts) ctx.lineTo(p[0], p[1]);
+    ctx.lineTo(W, H);
+    ctx.closePath();
+    ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--hill-near');
+    ctx.fill();
+  }
+
+  // Stars (fixed, twinkling subtly)
+  const stars = [];
+  function initStars() {
+    stars.length = 0;
+    const n = Math.floor((W * H) / 9000);
+    for (let i = 0; i < n; i++) {
+      stars.push({
+        x: Math.random() * W,
+        y: Math.random() * H * 0.6,
+        r: Math.random() * 1.2 + 0.3,
+        phase: Math.random() * Math.PI * 2,
+        speed: 0.5 + Math.random() * 0.8
+      });
+    }
+  }
+  initStars();
+  window.addEventListener('resize', initStars);
+
+  function drawStars(t) {
+    for (const s of stars) {
+      const tw = 0.55 + 0.45 * Math.sin(t * 0.001 * s.speed + s.phase);
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(244, 234, 217, ${tw * 0.8})`;
+      ctx.fill();
+    }
+  }
+
+  // Fireflies
+  class Firefly {
+    constructor(x, y) {
+      this.x = x;
+      this.y = y;
+      this.baseSize = 1.8 + Math.random() * 1.6;
+      this.angle = Math.random() * Math.PI * 2;
+      this.wanderSpeed = 0.35 + Math.random() * 0.4;
+      this.wanderRadius = 30 + Math.random() * 50;
+      this.homeX = x;
+      this.homeY = y;
+      this.blinkPhase = Math.random() * Math.PI * 2;
+      this.blinkSpeed = 0.02 + Math.random() * 0.02;
+      this.vx = 0;
+      this.vy = 0;
+      this.born = performance.now();
+    }
+    update(t, dt, attractX, attractY, attracting) {
+      this.angle += (Math.random() - 0.5) * 0.15;
+      const wanderX = this.homeX + Math.cos(this.angle) * this.wanderRadius;
+      const wanderY = this.homeY + Math.sin(this.angle * 1.3) * this.wanderRadius * 0.6;
+
+      let targetX = wanderX;
+      let targetY = wanderY;
+
+      if (attracting) {
+        const dx = attractX - this.x;
+        const dy = attractY - this.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 260) {
+          const pull = (1 - dist / 260) * 0.6;
+          targetX = this.x + dx * pull;
+          targetY = this.y + dy * pull;
+        }
+      }
+
+      const ax = (targetX - this.x) * 0.02;
+      const ay = (targetY - this.y) * 0.02;
+      this.vx = this.vx * 0.92 + ax;
+      this.vy = this.vy * 0.92 + ay;
+      this.x += this.vx;
+      this.y += this.vy;
+
+      // slowly drift home anchor so they don't get stuck forever near cursor
+      this.homeX += (this.x - this.homeX) * 0.0015;
+      this.homeY += (this.y - this.homeY) * 0.0015;
+
+      this.blinkPhase += this.blinkSpeed * dt;
+    }
+    draw() {
+      const glow = 0.4 + 0.6 * Math.max(0, Math.sin(this.blinkPhase));
+      const r = this.baseSize;
+      const grad = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, r * 8);
+      grad.addColorStop(0, `rgba(255, 243, 196, ${0.9 * glow})`);
+      grad.addColorStop(0.3, `rgba(255, 209, 102, ${0.5 * glow})`);
+      grad.addColorStop(1, 'rgba(255, 209, 102, 0)');
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, r * 8, 0, Math.PI * 2);
+      ctx.fillStyle = grad;
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, r * 0.6, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255, 250, 230, ${0.7 + 0.3 * glow})`;
+      ctx.fill();
+    }
+  }
+
+  let fireflies = [];
+  const MAX_FIREFLIES = 60;
+
+  function spawnFirefly(x, y) {
+    if (fireflies.length >= MAX_FIREFLIES) fireflies.shift();
+    // scatter a little so clicks don't stack perfectly
+    const jx = x + (Math.random() - 0.5) * 20;
+    const jy = y + (Math.random() - 0.5) * 20;
+    fireflies.push(new Firefly(jx, jy));
+    countEl.textContent = fireflies.length;
+  }
+
+  // seed a few on load so the scene isn't empty
+  function seedInitial() {
+    for (let i = 0; i < 5; i++) {
+      spawnFirefly(
+        W * (0.2 + Math.random() * 0.6),
+        H * (0.45 + Math.random() * 0.3)
+      );
+    }
+  }
+
+  canvas.addEventListener('click', e => {
+    spawnFirefly(e.clientX, e.clientY);
+    hintEl.classList.remove('show');
+  });
+  canvas.addEventListener('touchstart', e => {
+    if (e.touches[0]) {
+      spawnFirefly(e.touches[0].clientX, e.touches[0].clientY);
+      hintEl.classList.remove('show');
+    }
+  }, { passive: true });
+
+  resetBtn.addEventListener('click', () => {
+    fireflies = [];
+    countEl.textContent = 0;
+  });
+
+  setTimeout(() => hintEl.classList.add('show'), 800);
+
+  let lastT = performance.now();
+  function frame(t) {
+    const dt = Math.min(2, (t - lastT) / 16.67);
+    lastT = t;
+
+    // sky gradient
+    const skyGrad = ctx.createLinearGradient(0, 0, 0, H);
+    skyGrad.addColorStop(0, getComputedStyle(document.documentElement).getPropertyValue('--sky-top'));
+    skyGrad.addColorStop(0.55, getComputedStyle(document.documentElement).getPropertyValue('--sky-mid'));
+    skyGrad.addColorStop(1, getComputedStyle(document.documentElement).getPropertyValue('--sky-low'));
+    ctx.fillStyle = skyGrad;
+    ctx.fillRect(0, 0, W, H);
+
+    drawStars(t);
+    drawHills();
+
+    const idleMs = performance.now() - pointer.idleSince;
+    const attracting = pointer.active && idleMs > 350;
+
+    for (const f of fireflies) {
+      f.update(t, dt, pointer.x, pointer.y, attracting);
+      f.draw();
+    }
+
+    requestAnimationFrame(frame);
+  }
+
+  seedInitial();
+  requestAnimationFrame(frame);
+})();
+</script>
+
+</body>
+</html>
